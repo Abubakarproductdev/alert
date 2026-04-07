@@ -4,71 +4,78 @@
     <meta charset="UTF-8">
     <title>Trading Audio Alerts</title>
     <style>
-        body { font-family: sans-serif; text-align: center; margin-top: 100px; }
-        button { padding: 15px 30px; font-size: 18px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; }
-        button:hover { background-color: #0056b3; }
-        p { font-size: 18px; color: #333; }
+        body { 
+            font-family: sans-serif; 
+            text-align: center; 
+            margin-top: 100px; 
+        }
+
+        button { 
+            padding: 15px 30px; 
+            font-size: 18px; 
+            cursor: pointer; 
+            background-color: red; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            margin: 10px;
+        }
+
+        p { 
+            font-size: 18px; 
+            color: #333; 
+        }
     </style>
 </head>
 <body>
-    <p>Your alerts are set for 9:30 AM to 12:00 PM (UTC-4).</p>
-    <button onclick="startApp()">Start Alerts</button>
-    <p id="status">Waiting for you to click start...</p>
 
-    <audio id="sound40" src="fahhhhh.mp3"></audio>
-    <audio id="sound60" src="gop.mp3"></audio>
+    <audio id="sound60" src="sound600.mp3"></audio>
+
+    <button id="startBtn" onclick="startApp()">Start</button>
+    <button onclick="stopApp()">Stop</button>
+    <p id="status">Stopped</p>
 
     <script>
-        let lastSecond = -1;
-        let alertInterval;
+        let alertInterval = null;
 
         function startApp() {
-            document.getElementById('status').innerText = "Alerts are running! You can leave this tab open.";
-            
-            let initSpeech = new SpeechSynthesisUtterance("");
-            window.speechSynthesis.speak(initSpeech);
+            const status = document.getElementById('status');
+            const button = document.getElementById('startBtn');
+            const sound = document.getElementById('sound60');
 
-            if(alertInterval) clearInterval(alertInterval);
-            alertInterval = setInterval(checkTime, 250);
+            if (alertInterval) return;
+
+            status.innerText = "Running: Sound every 5 minutes";
+
+            // button green
+            button.innerText = "Running";
+            button.style.backgroundColor = "green";
+
+            // play once immediately (important for browser permission)
+            sound.play().catch(() => console.log("Click allowed audio"));
+
+            alertInterval = setInterval(() => {
+                sound.currentTime = 0; // restart sound
+                sound.play().catch(() => console.log("Audio blocked"));
+            }, 5 * 60 * 1000);
         }
 
-        function checkTime() {
-            const now = new Date();
-            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-            const targetTime = new Date(utcTime - (4 * 3600000));
+        function stopApp() {
+            const status = document.getElementById('status');
+            const button = document.getElementById('startBtn');
 
-            const hours = targetTime.getHours();
-            const minutes = targetTime.getMinutes();
-            const seconds = targetTime.getSeconds();
-
-            const timeInMinutes = (hours * 60) + minutes;
-
-            if (timeInMinutes >= 570 && timeInMinutes < 720) {
-                if (seconds !== lastSecond) {
-                    lastSecond = seconds;
-
-                    if (seconds === 40) {
-                        document.getElementById('sound40').play().catch(e => console.log("Audio waiting for user"));
-                    } else if (seconds >= 55 && seconds <= 59) {
-                        let count = 60 - seconds;
-                        
-                        window.speechSynthesis.cancel();
-                        
-                        let speech = new SpeechSynthesisUtterance(count.toString());
-                        speech.rate = 1.8; 
-                        speech.pitch = 1.4; 
-                        window.speechSynthesis.speak(speech);
-                    } else if (seconds === 0) {
-                        document.getElementById('sound60').play().catch(e => console.log("Audio waiting for user"));
-                    }
-                }
-            } else if (timeInMinutes === 720 && seconds === 0) {
-                if (seconds !== lastSecond) {
-                    lastSecond = seconds;
-                    document.getElementById('sound60').play().catch(e => console.log("Audio waiting for user"));
-                }
+            if (alertInterval) {
+                clearInterval(alertInterval);
+                alertInterval = null;
             }
+
+            status.innerText = "Stopped";
+
+            // button red
+            button.innerText = "Start";
+            button.style.backgroundColor = "red";
         }
     </script>
+
 </body>
 </html>
